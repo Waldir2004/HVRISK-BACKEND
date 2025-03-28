@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 
-class Users(BaseModel):
+class Usuario(BaseModel):
     id: int = None
     rol_id: int
     correo_electronico: str

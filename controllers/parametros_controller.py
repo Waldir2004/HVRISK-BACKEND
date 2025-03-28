@@ -1,86 +1,181 @@
 import mysql.connector
 from fastapi import HTTPException
 from config.bd_config import get_db_connection
-from models.parametros_models import parametros
+from models.parametros_models import Parametros
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 class ParametrosController:
-    def create_parametro(self, parametro: parametros):
+    def crear_parametro(self, parametro: Parametros) -> dict:
+        """Crea un nuevo parámetro en el sistema"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO parametros (refencia, nombre, descripcion, estado) VALUES (%s, %s, %s, %s)",
-                (parametro.refencia, parametro.nombre, parametro.descripcion, parametro.estado)
+            
+            # Validación adicional (ejemplo)
+            if not parametro.referencia or len(parametro.referencia) > 20:
+                raise HTTPException(
+                    status_code=400,
+                    detail="La referencia es requerida (max 20 caracteres)"
+                )
+            
+            query = """
+                INSERT INTO parametros (referencia, nombre, descripcion, estado)
+                VALUES (%s, %s, %s, %s)
+            """
+            values = (
+                parametro.referencia,
+                parametro.nombre,
+                parametro.descripcion,
+                parametro.estado
             )
+            
+            cursor.execute(query, values)
             conn.commit()
-            return {"resultado": "Parámetro creado"}
+            
+            return {
+                "resultado": "Parámetro creado exitosamente",
+                "id": cursor.lastrowid,
+                "referencia": parametro.referencia
+            }
+            
         except mysql.connector.Error as err:
             conn.rollback()
-            raise HTTPException(status_code=500, detail=str(err))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al crear parámetro: {err}"
+            )
         finally:
             conn.close()
 
-    def get_parametros(self) -> List[dict]:
+    def listar_parametros(self) -> List[dict]:
+        """Obtiene todos los parámetros activos"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id, refencia, nombre, descripcion, estado FROM parametros WHERE deleted_at IS NULL")
+            
+            cursor.execute("""
+                SELECT id, referencia, nombre, descripcion, estado 
+                FROM parametros 
+                WHERE deleted_at IS NULL
+                ORDER BY nombre ASC
+            """)
+            
             result = cursor.fetchall()
-            if result:
-                json_data = jsonable_encoder(result)
-                return {"resultado": json_data}
-            else:
-                raise HTTPException(status_code=404, detail="Parámetros no encontrados")
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No se encontraron parámetros"
+                )
+                
+            return {"parametros": jsonable_encoder(result)}
+            
         except mysql.connector.Error as err:
-            raise HTTPException(status_code=500, detail=str(err))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al obtener parámetros: {err}"
+            )
         finally:
             conn.close()
 
-    def get_parametro(self, parametro_id: int):
+    def obtener_parametro(self, parametro_id: int) -> dict:
+        """Obtiene un parámetro específico por su ID"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id, refencia, nombre, descripcion, estado FROM parametros WHERE id = %s AND deleted_at IS NULL", (parametro_id,))
+            
+            cursor.execute("""
+                SELECT id, referencia, nombre, descripcion, estado 
+                FROM parametros 
+                WHERE id = %s AND deleted_at IS NULL
+            """, (parametro_id,))
+            
             result = cursor.fetchone()
-            if result:
-                json_data = jsonable_encoder(result)
-                return {"resultado": json_data}
-            else:
-                raise HTTPException(status_code=404, detail="Parámetro no encontrado")
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Parámetro no encontrado"
+                )
+                
+            return {"parametro": jsonable_encoder(result)}
+            
         except mysql.connector.Error as err:
-            raise HTTPException(status_code=500, detail=str(err))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al obtener parámetro: {err}"
+            )
         finally:
             conn.close()
 
-    def edit_parametro(self, parametro_id: int, parametro: parametros):
+    def actualizar_parametro(self, parametro_id: int, parametro: Parametros) -> dict:
+        """Actualiza un parámetro existente"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
+            
+            query = """
+                UPDATE parametros SET
+                    referencia = %s,
+                    nombre = %s,
+                    descripcion = %s,
+                    estado = %s,
+                    updated_at = NOW()
+                WHERE id = %s
+            """
+            values = (
+                parametro.referencia,
+                parametro.nombre,
+                parametro.descripcion,
+                parametro.estado,
+                parametro_id
+            )
+            
+            cursor.execute(query, values)
+            conn.commit()
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Parámetro no encontrado"
+                )
+                
+            return {"resultado": "Parámetro actualizado exitosamente"}
+            
+        except mysql.connector.Error as err:
+            conn.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al actualizar parámetro: {err}"
+            )
+        finally:
+            conn.close()
+
+    def eliminar_parametro(self, parametro_id: int) -> dict:
+        """Elimina lógicamente un parámetro"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
             cursor.execute(
-                "UPDATE parametros SET refencia = %s, nombre = %s, descripcion = %s, estado = %s WHERE id = %s",
-                (parametro.refencia, parametro.nombre, parametro.descripcion, parametro.estado, parametro_id)
+                "UPDATE parametros SET deleted_at = NOW() WHERE id = %s",
+                (parametro_id,)
             )
             conn.commit()
-            return {"resultado": "Parámetro actualizado"}
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Parámetro no encontrado"
+                )
+                
+            return {"resultado": "Parámetro eliminado exitosamente"}
+            
         except mysql.connector.Error as err:
             conn.rollback()
-            raise HTTPException(status_code=500, detail=str(err))
-        finally:
-            conn.close()
-
-    def delete_parametro(self, parametro_id: int):
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            deleted_at = datetime.now()
-            cursor.execute("UPDATE parametros SET deleted_at = %s WHERE id = %s", (deleted_at, parametro_id))
-            conn.commit()
-            return {"resultado": "Parámetro eliminado"}
-        except mysql.connector.Error as err:
-            conn.rollback()
-            raise HTTPException(status_code=500, detail=str(err))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al eliminar parámetro: {err}"
+            )
         finally:
             conn.close()

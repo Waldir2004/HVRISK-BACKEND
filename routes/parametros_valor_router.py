@@ -1,36 +1,54 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from controllers.parametros_valor_controller import ParametrosValorController
-from models.parametros_valor_models import parametros_valor
+from models.parametros_valor_models import ParametrosValor
+from typing import Optional
 
-router = APIRouter()
-parametros_valor_controller = ParametrosValorController()
+router = APIRouter(
+    prefix="/parametros-valor",
+    tags=["Valores de Parámetros"],
+    responses={
+        404: {"description": "Recurso no encontrado"},
+        400: {"description": "Solicitud inválida"},
+        500: {"description": "Error interno del servidor"}
+    }
+)
 
-@router.post("/create_parametro_valor")
-async def create_parametro_valor(parametro_valor: parametros_valor):
-    rpta = parametros_valor_controller.create_parametro_valor(parametro_valor)
-    return rpta
+controller = ParametrosValorController()
 
-@router.get("/get_parametro_valor/{parametro_valor_id}", response_model=parametros_valor)
-async def get_parametro_valor(parametro_valor_id: int):
-    rpta = parametros_valor_controller.get_parametro_valor(parametro_valor_id)
-    return rpta
+@router.post("/crear", response_model=dict, status_code=201)
+async def crear_parametro_valor(parametro_valor: ParametrosValor):
+    """
+    Crea un nuevo valor para un parámetro existente.
+    
+    Campos requeridos:
+    - referencia (string, max 20 chars)
+    - nombre (string)
+    - parametro_id (int, ID de parámetro existente)
+    - estado (boolean)
+    """
+    return controller.crear_parametro_valor(parametro_valor)
 
-@router.get("/get_parametros_valores")
-async def get_parametros_valores():
-    rpta = parametros_valor_controller.get_parametros_valores()
-    return rpta
+@router.get("/listar", response_model=dict)
+async def listar_parametros_valores():
+    """Lista todos los valores de parámetros con información del parámetro padre"""
+    return controller.listar_parametros_valores()
 
-@router.put("/edit_parametro_valor/{parametro_valor_id}")
-async def edit_parametro_valor(parametro_valor_id: int, parametro_valor: parametros_valor):
-    rpta = parametros_valor_controller.edit_parametro_valor(parametro_valor_id, parametro_valor)
-    return rpta
+@router.get("/obtener/{parametro_valor_id}", response_model=dict)
+async def obtener_parametro_valor(parametro_valor_id: int):
+    """Obtiene un valor específico con información del parámetro asociado"""
+    return controller.obtener_parametro_valor(parametro_valor_id)
 
-@router.delete("/delete_parametro_valor/{parametro_valor_id}")
-async def delete_parametro_valor(parametro_valor_id: int):
-    rpta = parametros_valor_controller.delete_parametro_valor(parametro_valor_id)
-    return rpta
+@router.put("/actualizar/{parametro_valor_id}", response_model=dict)
+async def actualizar_parametro_valor(parametro_valor_id: int, parametro_valor: ParametrosValor):
+    """Actualiza un valor de parámetro existente"""
+    return controller.actualizar_parametro_valor(parametro_valor_id, parametro_valor)
 
-@router.get("/get_parametro_valor_por_parametro_id/{parametro_id}")
-async def get_parametros_valor_por_parametro_id(parametro_id: int):
-    rpta = parametros_valor_controller.get_parametros_valor_por_parametro_id(parametro_id)
-    return rpta
+@router.delete("/eliminar/{parametro_valor_id}", response_model=dict)
+async def eliminar_parametro_valor(parametro_valor_id: int):
+    """Elimina lógicamente un valor de parámetro"""
+    return controller.eliminar_parametro_valor(parametro_valor_id)
+
+@router.get("/por-parametro/{parametro_id}", response_model=dict)
+async def listar_valores_por_parametro(parametro_id: int):
+    """Obtiene todos los valores asociados a un parámetro específico"""
+    return controller.listar_valores_por_parametro(parametro_id)
