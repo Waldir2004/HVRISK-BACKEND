@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class modulos(BaseModel):
+class Modulos(BaseModel):
     id: int = None
     nombre: str
     descripcion: str
