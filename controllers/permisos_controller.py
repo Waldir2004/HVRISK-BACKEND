@@ -171,29 +171,19 @@ class PermisosController:
         finally:
             conn.close()
 
-    def listar_permisos_por_rol(self, rol_id: int) -> dict:
+    def listar_permisos_por_rol(self, rol_id: int):
         """Obtiene todos los módulos permitidos para un rol"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
-            cursor.execute("""
-                SELECT m.id, m.nombre, m.descripcion
-                FROM permisos p
-                JOIN modulos m ON p.modulo_id = m.id
-                WHERE p.rol_id = %s 
-                AND p.estado = 1 
-                AND p.deleted_at IS NULL
-            """, (rol_id,))
-            
-            result = cursor.fetchall()
-            if not result:
-                raise HTTPException(
-                    status_code=404,
-                    detail="No se encontraron permisos para este rol"
-                )
-                
-            return {"modulos": jsonable_encoder(result)}
+            cursor.execute("SELECT modulo_id FROM permisos WHERE rol_id = %s AND estado = '1' AND deleted_at IS NULL", (rol_id,))
+            results = cursor.fetchall()
+            if results:
+                modulo_ids = [result['modulo_id'] for result in results]
+                return {"modulos": modulo_ids}
+            else:
+                 raise HTTPException(status_code=404, detail="No se encontraron permisos para este rol")
             
         except mysql.connector.Error as err:
             raise HTTPException(
@@ -203,7 +193,7 @@ class PermisosController:
         finally:
             conn.close()
 
-    def actualizar_permisos_rol(self, rol_id: int, permisos: List[Permisos]) -> dict:
+    def actualizar_permisos_rol(self, rol_id: int, permisos: List[Permisos]):
         """Actualiza todos los permisos de un rol (reemplaza los existentes)"""
         try:
             conn = get_db_connection()
