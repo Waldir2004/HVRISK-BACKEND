@@ -15,18 +15,25 @@ class DatosClinicosController:
             
             query = """
                 INSERT INTO datos_clinicos (
-                    paciente_id, peso_kg, altura_cm, circ_cintura_cm,
-                    presion_sistolica, presion_diastolica, frecuencia_cardiaca
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    evaluacion_id, peso_kg, altura_cm, circ_cintura_cm,
+                    presion_sistolica, presion_diastolica, frecuencia_cardiaca,
+                    ldl, hdl, trigliceridos, glucosa_ayunas, hba1c, creatinina
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
-                datos.paciente_id,
+                datos.evaluacion_id,
                 datos.peso_kg,
                 datos.altura_cm,
                 datos.circ_cintura_cm,
                 datos.presion_sistolica,
                 datos.presion_diastolica,
-                datos.frecuencia_cardiaca
+                datos.frecuencia_cardiaca,
+                datos.ldl,
+                datos.hdl,
+                datos.trigliceridos,
+                datos.glucosa_ayunas,
+                datos.hba1c,
+                datos.creatinina,
             )
             
             cursor.execute(query, values)
@@ -42,16 +49,16 @@ class DatosClinicosController:
         finally:
             conn.close()
 
-    def get_datos_clinicos(self, paciente_id: Optional[int] = None) -> List[dict]:
-        """Obtiene todos los registros o filtra por paciente_id"""
+    def get_datos_clinicos(self, evaluacion_id: Optional[int] = None) -> List[dict]:
+        """Obtiene todos los registros o filtra por evaluacion_id"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
             base_query = "SELECT * FROM datos_clinicos WHERE deleted_at IS NULL"
-            if paciente_id:
-                base_query += " AND paciente_id = %s"
-                cursor.execute(base_query, (paciente_id,))
+            if evaluacion_id:
+                base_query += " AND evaluacion_id = %s"
+                cursor.execute(base_query, (evaluacion_id,))
             else:
                 cursor.execute(base_query)
                 
@@ -95,26 +102,36 @@ class DatosClinicosController:
             cursor = conn.cursor()
             
             query = """
-                UPDATE datos_clinicos SET
-                    paciente_id = %s,
+               UPDATE datos_clinicos SET
+                    evaluacion_id = %s,
                     peso_kg = %s,
                     altura_cm = %s,
                     circ_cintura_cm = %s,
                     presion_sistolica = %s,
                     presion_diastolica = %s,
                     frecuencia_cardiaca = %s,
-                    updated_at = NOW()
+                    ldl = %s,
+                    hdl = %s,
+                    trigliceridos = %s,
+                    glucosa_ayunas = %s,
+                    hba1c = %s,
+                    creatinina = %s,
                 WHERE id = %s
             """
             values = (
-                datos.paciente_id,
+                datos.evaluacion_id,
                 datos.peso_kg,
                 datos.altura_cm,
                 datos.circ_cintura_cm,
                 datos.presion_sistolica,
                 datos.presion_diastolica,
                 datos.frecuencia_cardiaca,
-                datos_id
+                datos.ldl,
+                datos.hdl,
+                datos.trigliceridos,
+                datos.glucosa_ayunas,
+                datos.hba1c,
+                datos.creatinina,
             )
             
             cursor.execute(query, values)

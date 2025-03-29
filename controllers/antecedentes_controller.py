@@ -15,18 +15,22 @@ class AntecedentesController:
             
             query = """
                 INSERT INTO antecedentes (
-                    paciente_id, diabetes, hipertension, enfermedad_renal,
-                    apnea_sueno, tabaquismo, familia_cardiopatia
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    evaluation_id, diabetes, hipertension, enfermedad_renal,
+                    apnea_sueno, dislipidemia, epoc, familia_cardiopatia,
+                    familia_diabetes, tabaquismo_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
-                antecedente.paciente_id,
+                antecedente.evaluation_id,
                 antecedente.diabetes,
                 antecedente.hipertension,
                 antecedente.enfermedad_renal,
                 antecedente.apnea_sueno,
-                antecedente.tabaquismo,
-                antecedente.familia_cardiopatia
+                antecedente.dislipidemia,
+                antecedente.epoc,
+                antecedente.familia_cardiopatia,
+                antecedente.familia_diabetes,
+                antecedente.tabaquismo_id
             )
             
             cursor.execute(query, values)
@@ -39,16 +43,16 @@ class AntecedentesController:
         finally:
             conn.close()
 
-    def get_antecedentes(self, paciente_id: Optional[int] = None) -> List[dict]:
-        """Obtiene todos los antecedentes o filtra por paciente_id"""
+    def get_antecedentes(self, evaluation_id: Optional[int] = None) -> List[dict]:
+        """Obtiene todos los antecedentes o filtra por evaluation_id"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
             base_query = "SELECT * FROM antecedentes WHERE deleted_at IS NULL"
-            if paciente_id:
-                base_query += " AND paciente_id = %s"
-                cursor.execute(base_query, (paciente_id,))
+            if evaluation_id:
+                base_query += " AND evaluation_id = %s"
+                cursor.execute(base_query, (evaluation_id,))
             else:
                 cursor.execute(base_query)
                 
@@ -93,24 +97,30 @@ class AntecedentesController:
             
             query = """
                 UPDATE antecedentes SET
-                    paciente_id = %s,
+                    evaluation_id = %s,
                     diabetes = %s,
                     hipertension = %s,
                     enfermedad_renal = %s,
                     apnea_sueno = %s,
-                    tabaquismo = %s,
+                    dislipidemia = %s,
+                    epoc = %s,
                     familia_cardiopatia = %s,
+                    familia_diabetes = %s,
+                    tabaquismo_id = %s,
                     updated_at = NOW()
                 WHERE id = %s
             """
             values = (
-                antecedente.paciente_id,
+                antecedente.evaluation_id,
                 antecedente.diabetes,
                 antecedente.hipertension,
                 antecedente.enfermedad_renal,
                 antecedente.apnea_sueno,
-                antecedente.tabaquismo,
+                antecedente.dislipidemia,
+                antecedente.epoc,
                 antecedente.familia_cardiopatia,
+                antecedente.familia_diabetes,
+                antecedente.tabaquismo_id,
                 antecedente_id
             )
             

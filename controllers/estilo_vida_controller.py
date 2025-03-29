@@ -15,15 +15,23 @@ class EstiloVidaController:
             
             query = """
                 INSERT INTO estilo_vida (
-                    paciente_id, actividad_fisica_id, 
-                    consumo_alcohol_id, dieta_alta_sodio
-                ) VALUES (%s, %s, %s, %s)
+                    evaluacion_id, actividad_fisica_id, horas_ejercicio_semana,
+                    consumo_alcohol_id, consumo_cafeina_id, dieta_alta_sodio,
+                    dieta_alta_grasas, horas_sueno_diario, calidad_sueno_id,
+                    nivel_estres_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
-                estilo.paciente_id,
+                estilo.evaluacion_id,
                 estilo.actividad_fisica_id,
+                estilo.horas_ejercicio_semana,
                 estilo.consumo_alcohol_id,
-                estilo.dieta_alta_sodio
+                estilo.consumo_cafeina_id,
+                estilo.dieta_alta_sodio,
+                estilo.dieta_alta_grasas,
+                estilo.horas_sueno_diario,
+                estilo.calidad_sueno_id,
+                estilo.nivel_estres_id
             )
             
             cursor.execute(query, values)
@@ -42,16 +50,30 @@ class EstiloVidaController:
         finally:
             conn.close()
 
-    def get_estilos_vida(self, paciente_id: Optional[int] = None) -> List[dict]:
-        """Obtiene registros de estilo de vida, con filtro opcional por paciente"""
+    def get_estilos_vida(self, evaluacion_id: Optional[int] = None) -> List[dict]:
+        """Obtiene registros de estilo de vida, con filtro opcional por evaluación"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
-            query = "SELECT * FROM estilo_vida WHERE deleted_at IS NULL"
-            if paciente_id:
-                query += " AND paciente_id = %s"
-                cursor.execute(query, (paciente_id,))
+            query = """
+                SELECT ev.*, 
+                       af.valor as actividad_fisica,
+                       ca.valor as consumo_alcohol,
+                       cc.valor as consumo_cafeina,
+                       cs.valor as calidad_sueno,
+                       ne.valor as nivel_estres
+                FROM estilo_vida ev
+                LEFT JOIN parametros_valor af ON ev.actividad_fisica_id = af.id
+                LEFT JOIN parametros_valor ca ON ev.consumo_alcohol_id = ca.id
+                LEFT JOIN parametros_valor cc ON ev.consumo_cafeina_id = cc.id
+                LEFT JOIN parametros_valor cs ON ev.calidad_sueno_id = cs.id
+                LEFT JOIN parametros_valor ne ON ev.nivel_estres_id = ne.id
+                WHERE ev.deleted_at IS NULL
+            """
+            if evaluacion_id:
+                query += " AND ev.evaluacion_id = %s"
+                cursor.execute(query, (evaluacion_id,))
             else:
                 cursor.execute(query)
                 
@@ -78,10 +100,22 @@ class EstiloVidaController:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
-            cursor.execute(
-                "SELECT * FROM estilo_vida WHERE id = %s AND deleted_at IS NULL",
-                (estilo_id,)
-            )
+            query = """
+                SELECT ev.*, 
+                       af.valor as actividad_fisica,
+                       ca.valor as consumo_alcohol,
+                       cc.valor as consumo_cafeina,
+                       cs.valor as calidad_sueno,
+                       ne.valor as nivel_estres
+                FROM estilo_vida ev
+                LEFT JOIN parametros_valor af ON ev.actividad_fisica_id = af.id
+                LEFT JOIN parametros_valor ca ON ev.consumo_alcohol_id = ca.id
+                LEFT JOIN parametros_valor cc ON ev.consumo_cafeina_id = cc.id
+                LEFT JOIN parametros_valor cs ON ev.calidad_sueno_id = cs.id
+                LEFT JOIN parametros_valor ne ON ev.nivel_estres_id = ne.id
+                WHERE ev.id = %s AND ev.deleted_at IS NULL
+            """
+            cursor.execute(query, (estilo_id,))
             result = cursor.fetchone()
             
             if not result:
@@ -108,18 +142,30 @@ class EstiloVidaController:
             
             query = """
                 UPDATE estilo_vida SET
-                    paciente_id = %s,
+                    evaluacion_id = %s,
                     actividad_fisica_id = %s,
+                    horas_ejercicio_semana = %s,
                     consumo_alcohol_id = %s,
+                    consumo_cafeina_id = %s,
                     dieta_alta_sodio = %s,
+                    dieta_alta_grasas = %s,
+                    horas_sueno_diario = %s,
+                    calidad_sueno_id = %s,
+                    nivel_estres_id = %s,
                     updated_at = NOW()
                 WHERE id = %s
             """
             values = (
-                estilo.paciente_id,
+                estilo.evaluacion_id,
                 estilo.actividad_fisica_id,
+                estilo.horas_ejercicio_semana,
                 estilo.consumo_alcohol_id,
+                estilo.consumo_cafeina_id,
                 estilo.dieta_alta_sodio,
+                estilo.dieta_alta_grasas,
+                estilo.horas_sueno_diario,
+                estilo.calidad_sueno_id,
+                estilo.nivel_estres_id,
                 estilo_id
             )
             

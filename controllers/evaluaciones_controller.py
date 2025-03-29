@@ -1,36 +1,39 @@
 import mysql.connector
 from fastapi import HTTPException
 from config.bd_config import get_db_connection
-from models.resultado_riesgo_model import ResultadosRiesgo
+from models.evaluaciones_model import Evaluaciones
 from fastapi.encoders import jsonable_encoder
 from typing import List, Optional
 from datetime import datetime
 
-class ResultadoRiesgoController:
-    def create_resultado(self, resultado: ResultadosRiesgo) -> dict:
-        """Registra un nuevo resultado de riesgo cardiovascular"""
+class EvaluacionesController:
+    def create_evaluacion(self, evaluacion: Evaluaciones) -> dict:
+        """Registra una nueva evaluación de riesgo cardiovascular"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             
             query = """
-                INSERT INTO resultados_riesgo (
-                    paciente_id, puntuacion_riesgo, nivel_riesgo_id
-                ) VALUES (%s, %s, %s)
+                INSERT INTO evaluaciones (
+                    paciente_id, riesgo_hvi_id, riesgo_hvd_id,
+                    puntuacion_hvi, puntuacion_hvd, framingham_risk, notas
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             values = (
-                resultado.paciente_id,
-                resultado.puntuacion_riesgo,
-                resultado.nivel_riesgo_id
+                evaluacion.paciente_id,
+                evaluacion.riesgo_hvi_id,
+                evaluacion.riesgo_hvd_id,
+                evaluacion.puntuacion_hvi,
+                evaluacion.puntuacion_hvd,
+                evaluacion.framingham_risk,
+                evaluacion.notas
             )
             
             cursor.execute(query, values)
             conn.commit()
             return {
-                "resultado": "Evaluación de riesgo registrada",
-                "id": cursor.lastrowid,
-                "puntuacion": resultado.puntuacion_riesgo,
-                "nivel_riesgo": resultado.nivel_riesgo_id
+                "resultado": "Evaluación registrada exitosamente",
+                "id": cursor.lastrowid
             }
             
         except mysql.connector.Error as err:
@@ -42,21 +45,24 @@ class ResultadoRiesgoController:
         finally:
             conn.close()
 
-    def get_resultados(self, paciente_id: Optional[int] = None) -> List[dict]:
-        """Obtiene evaluaciones de riesgo con filtro opcional por paciente"""
+    def get_evaluaciones(self, paciente_id: Optional[int] = None) -> List[dict]:
+        """Obtiene evaluaciones con filtro opcional por paciente"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
             query = """
-                SELECT r.*, n.nombre as nivel_riesgo 
-                FROM resultados_riesgo r
-                LEFT JOIN niveles_riesgo n ON r.nivel_riesgo_id = n.id
-                WHERE r.deleted_at IS NULL
+                SELECT e.*, 
+                       pv_hvi.valor as riesgo_hvi, 
+                       pv_hvd.valor as riesgo_hvd
+                FROM evaluaciones e
+                LEFT JOIN parametros_valor pv_hvi ON e.riesgo_hvi_id = pv_hvi.id
+                LEFT JOIN parametros_valor pv_hvd ON e.riesgo_hvd_id = pv_hvd.id
+                WHERE e.deleted_at IS NULL
             """
             
             if paciente_id:
-                query += " AND r.paciente_id = %s"
+                query += " AND e.paciente_id = %s"
                 cursor.execute(query, (paciente_id,))
             else:
                 cursor.execute(query)
@@ -78,19 +84,22 @@ class ResultadoRiesgoController:
         finally:
             conn.close()
 
-    def get_resultado_by_id(self, resultado_id: int) -> dict:
+    def get_evaluacion_by_id(self, evaluacion_id: int) -> dict:
         """Obtiene una evaluación específica por ID"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
             query = """
-                SELECT r.*, n.nombre as nivel_riesgo 
-                FROM resultados_riesgo r
-                LEFT JOIN niveles_riesgo n ON r.nivel_riesgo_id = n.id
-                WHERE r.id = %s AND r.deleted_at IS NULL
+                SELECT e.*, 
+                       pv_hvi.valor as riesgo_hvi, 
+                       pv_hvd.valor as riesgo_hvd
+                FROM evaluaciones e
+                LEFT JOIN parametros_valor pv_hvi ON e.riesgo_hvi_id = pv_hvi.id
+                LEFT JOIN parametros_valor pv_hvd ON e.riesgo_hvd_id = pv_hvd.id
+                WHERE e.id = %s AND e.deleted_at IS NULL
             """
-            cursor.execute(query, (resultado_id,))
+            cursor.execute(query, (evaluacion_id,))
             result = cursor.fetchone()
             
             if not result:
@@ -109,25 +118,33 @@ class ResultadoRiesgoController:
         finally:
             conn.close()
 
-    def update_resultado(self, resultado_id: int, resultado: ResultadosRiesgo) -> dict:
+    def update_evaluacion(self, evaluacion_id: int, evaluacion: Evaluaciones) -> dict:
         """Actualiza una evaluación existente"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             
             query = """
-                UPDATE resultados_riesgo SET
+                UPDATE evaluaciones SET
                     paciente_id = %s,
-                    puntuacion_riesgo = %s,
-                    nivel_riesgo_id = %s,
+                    riesgo_hvi_id = %s,
+                    riesgo_hvd_id = %s,
+                    puntuacion_hvi = %s,
+                    puntuacion_hvd = %s,
+                    framingham_risk = %s,
+                    notas = %s,
                     updated_at = NOW()
                 WHERE id = %s
             """
             values = (
-                resultado.paciente_id,
-                resultado.puntuacion_riesgo,
-                resultado.nivel_riesgo_id,
-                resultado_id
+                evaluacion.paciente_id,
+                evaluacion.riesgo_hvi_id,
+                evaluacion.riesgo_hvd_id,
+                evaluacion.puntuacion_hvi,
+                evaluacion.puntuacion_hvd,
+                evaluacion.framingham_risk,
+                evaluacion.notas,
+                evaluacion_id
             )
             
             cursor.execute(query, values)
@@ -150,15 +167,15 @@ class ResultadoRiesgoController:
         finally:
             conn.close()
 
-    def delete_resultado(self, resultado_id: int) -> dict:
+    def delete_evaluacion(self, evaluacion_id: int) -> dict:
         """Elimina lógicamente una evaluación"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             
             cursor.execute(
-                "UPDATE resultados_riesgo SET deleted_at = NOW() WHERE id = %s",
-                (resultado_id,)
+                "UPDATE evaluaciones SET deleted_at = NOW() WHERE id = %s",
+                (evaluacion_id,)
             )
             conn.commit()
             
