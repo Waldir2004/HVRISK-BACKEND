@@ -17,9 +17,9 @@ async def crear_antecedente(antecedente: Antecedentes):
     return controller.create_antecedente(antecedente)
 
 @router.get("/listar", response_model=dict)
-async def listar_antecedentes(paciente_id: Optional[int] = None):
-    """Obtiene todos los antecedentes o filtra por paciente_id"""
-    return controller.get_antecedentes(paciente_id)
+async def listar_antecedentes(evaluation_id: Optional[int] = None):
+    """Obtiene todos los antecedentes o filtra por evaluation_id"""
+    return controller.get_antecedentes(evaluation_id)
 
 @router.get("/obtener/{antecedente_id}", response_model=dict)
 async def obtener_antecedente(antecedente_id: int):
