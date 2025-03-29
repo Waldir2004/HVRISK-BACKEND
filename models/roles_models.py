@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class roles(BaseModel):
+class Roles(BaseModel):
     id: int = None
     nombre: str
     estado: Optional[bool] = None

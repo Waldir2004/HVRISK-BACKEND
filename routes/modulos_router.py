@@ -1,31 +1,37 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from controllers.modulos_controller import ModulosController
-from models.modulos_models import modulos
+from models.modulos_models import Modulos
+from typing import Optional
 
-router = APIRouter()
-modulos_controller = ModulosController()
+router = APIRouter(
+    prefix="/modulos",
+    tags=["Módulos del Sistema"],
+    responses={404: {"description": "Módulo no encontrado"}}
+)
 
-@router.post("/create_modulo")
-async def create_modulo(modulo: modulos):
-    rpta = modulos_controller.create_modulo(modulo)
-    return rpta
+controller = ModulosController()
 
-@router.get("/get_modulo/{modulo_id}", response_model=modulos)
-async def get_modulo(modulo_id: int):
-    rpta = modulos_controller.get_modulo(modulo_id)
-    return rpta
+@router.post("/crear", response_model=dict, status_code=201)
+async def crear_modulo(modulo: Modulos):
+    """Registra un nuevo módulo en el sistema"""
+    return controller.crear_modulo(modulo)
 
-@router.get("/get_modulos")
-async def get_modulos():
-    rpta = modulos_controller.get_modulos()
-    return rpta
+@router.get("/listar", response_model=dict)
+async def listar_modulos():
+    """Obtiene todos los módulos activos"""
+    return controller.listar_modulos()
 
-@router.put("/edit_modulo/{modulo_id}")
-async def edit_modulo(modulo_id: int, modulo: modulos):
-    rpta = modulos_controller.edit_modulo(modulo_id, modulo)
-    return rpta
+@router.get("/obtener/{modulo_id}", response_model=dict)
+async def obtener_modulo(modulo_id: int):
+    """Obtiene un módulo específico por su ID"""
+    return controller.obtener_modulo(modulo_id)
 
-@router.delete("/delete_modulo/{modulo_id}")
-async def delete_modulo(modulo_id: int):
-    rpta = modulos_controller.delete_modulo(modulo_id)
-    return rpta
+@router.put("/actualizar/{modulo_id}", response_model=dict)
+async def actualizar_modulo(modulo_id: int, modulo: Modulos):
+    """Actualiza los datos de un módulo existente"""
+    return controller.actualizar_modulo(modulo_id, modulo)
+
+@router.delete("/eliminar/{modulo_id}", response_model=dict)
+async def eliminar_modulo(modulo_id: int):
+    """Elimina lógicamente un módulo (soft delete)"""
+    return controller.eliminar_modulo(modulo_id)
