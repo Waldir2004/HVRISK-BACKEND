@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Header, HTTPException
+from fastapi import APIRouter,Header, HTTPException, Body
 from controllers.auth_controller import *
 from models.auth_model import Auth
 
@@ -29,36 +29,21 @@ def verifytoken(Authorization: str = Header(None)):
 
     return nuevo_auth.validate_token(token, output=True)
 
-
-
-
-
-'''
-
-@router.post("/verifytoken")
-def verifytoken(Authorization: str=Header(None)):
-    token = Authorization.split(" ")[1]
-    print(token)
-    return "success"
-
-
-@router.post("/token")
-async def token(auth: Auth):
-    
-    ##print("AQUI")
-    user = nuevo_auth.login(auth)
+@router.post("/verify-google-user")
+async def verify_google_user(payload: dict = Body(...)):
+    user = nuevo_auth.verify_google_user(payload["email"])
     if not user:
-        raise HTTPException(status_code=401, detail="Incorrect username or password")
-    else:
-        print(user["id"])
-        access_token = nuevo_auth.create_access_token(data={"sub": user["usuario"]})
-    return access_token
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Crear token con datos adicionales de Google
+    google_data = {
+        "photoURL": payload.get("photoURL"),
+        "uid": payload.get("uid"),
+        "displayName": payload.get("displayName")
+    }
+    
+    access_token = nuevo_auth.create_access_token(user, google_data)
+    return {"access_token": access_token, "user": user}
 
- 
-@router.get("/protected-endpoint/")
-async def protected_endpoint(token: str = Depends(nuevo_auth.verify_token)):
-    if nuevo_auth.verify_token_expiration(token):
-        raise HTTPException(status_code=401, detail="Token has expired")
-        # Resto del código para el endpoint protegido
-    return {"message": "Access granted "}
-'''
+
+

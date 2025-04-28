@@ -189,31 +189,4 @@ class EstiloVidaController:
         finally:
             conn.close()
 
-    def delete_estilo_vida(self, estilo_id: int) -> dict:
-        """Elimina lógicamente un registro"""
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "UPDATE estilo_vida SET deleted_at = NOW() WHERE id = %s",
-                (estilo_id,)
-            )
-            conn.commit()
-            
-            if cursor.rowcount == 0:
-                raise HTTPException(
-                    status_code=404, 
-                    detail="Registro no encontrado"
-                )
-                
-            return {"resultado": "Registro eliminado exitosamente"}
-            
-        except mysql.connector.Error as err:
-            conn.rollback()
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Error al eliminar: {err}"
-            )
-        finally:
-            conn.close()
+  

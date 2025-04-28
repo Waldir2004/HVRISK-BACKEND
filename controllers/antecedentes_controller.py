@@ -14,14 +14,14 @@ class AntecedentesController:
             cursor = conn.cursor()
             
             query = """
-                INSERT INTO antecedentes (
-                    evaluation_id, diabetes, hipertension, enfermedad_renal,
+                INSERT INTO antecedentes_medicos (
+                    evaluacion_id, diabetes, hipertension, enfermedad_renal,
                     apnea_sueno, dislipidemia, epoc, familia_cardiopatia,
                     familia_diabetes, tabaquismo_id
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
-                antecedente.evaluation_id,
+                antecedente.evaluacion_id,
                 antecedente.diabetes,
                 antecedente.hipertension,
                 antecedente.enfermedad_renal,
@@ -43,16 +43,16 @@ class AntecedentesController:
         finally:
             conn.close()
 
-    def get_antecedentes(self, evaluation_id: Optional[int] = None) -> List[dict]:
+    def get_antecedentes(self, evaluacion_id: Optional[int] = None) -> List[dict]:
         """Obtiene todos los antecedentes o filtra por evaluation_id"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
-            base_query = "SELECT * FROM antecedentes WHERE deleted_at IS NULL"
-            if evaluation_id:
-                base_query += " AND evaluation_id = %s"
-                cursor.execute(base_query, (evaluation_id,))
+            base_query = "SELECT * FROM antecedentes_medicos WHERE deleted_at IS NULL"
+            if evaluacion_id:
+                base_query += " AND evaluacion_id = %s"
+                cursor.execute(base_query, (evaluacion_id,))
             else:
                 cursor.execute(base_query)
                 
@@ -74,7 +74,7 @@ class AntecedentesController:
             cursor = conn.cursor(dictionary=True)
             
             cursor.execute(
-                "SELECT * FROM antecedentes WHERE id = %s AND deleted_at IS NULL",
+                "SELECT * FROM antecedentes_medicos WHERE id = %s AND deleted_at IS NULL",
                 (antecedente_id,)
             )
             result = cursor.fetchone()
@@ -96,8 +96,8 @@ class AntecedentesController:
             cursor = conn.cursor()
             
             query = """
-                UPDATE antecedentes SET
-                    evaluation_id = %s,
+                UPDATE antecedentes_medicos SET
+                    evaluacion_id = %s,
                     diabetes = %s,
                     hipertension = %s,
                     enfermedad_renal = %s,
@@ -111,7 +111,7 @@ class AntecedentesController:
                 WHERE id = %s
             """
             values = (
-                antecedente.evaluation_id,
+                antecedente.evaluacion_id,
                 antecedente.diabetes,
                 antecedente.hipertension,
                 antecedente.enfermedad_renal,
@@ -131,29 +131,6 @@ class AntecedentesController:
                 raise HTTPException(status_code=404, detail="Antecedente no encontrado")
                 
             return {"resultado": "Antecedente actualizado exitosamente"}
-            
-        except mysql.connector.Error as err:
-            conn.rollback()
-            raise HTTPException(status_code=500, detail=f"Error de base de datos: {err}")
-        finally:
-            conn.close()
-
-    def delete_antecedente(self, antecedente_id: int) -> dict:
-        """Elimina (soft delete) un antecedente médico"""
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "UPDATE antecedentes SET deleted_at = NOW() WHERE id = %s",
-                (antecedente_id,)
-            )
-            conn.commit()
-            
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail="Antecedente no encontrado")
-                
-            return {"resultado": "Antecedente eliminado exitosamente"}
             
         except mysql.connector.Error as err:
             conn.rollback()

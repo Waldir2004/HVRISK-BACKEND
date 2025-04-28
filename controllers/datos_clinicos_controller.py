@@ -148,25 +148,4 @@ class DatosClinicosController:
         finally:
             conn.close()
 
-    def delete_datos_clinicos(self, datos_id: int) -> dict:
-        """Eliminación lógica de un registro"""
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "UPDATE datos_clinicos SET deleted_at = NOW() WHERE id = %s",
-                (datos_id,)
-            )
-            conn.commit()
-            
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail="Registro no encontrado")
-                
-            return {"resultado": "Datos clínicos eliminados exitosamente"}
-            
-        except mysql.connector.Error as err:
-            conn.rollback()
-            raise HTTPException(status_code=500, detail=f"Error de base de datos: {err}")
-        finally:
-            conn.close()
+    

@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Antecedentes(BaseModel):
     id: int = None
-    evaluation_id: int
+    evaluacion_id: int
     diabetes: Optional[bool] = False
     hipertension: Optional[bool] = False
     enfermedad_renal: Optional[bool] = False
