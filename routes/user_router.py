@@ -36,6 +36,14 @@ async def listar_usuarios():
     """Obtiene todos los usuarios activos con información relacionada"""
     return controller.listar_usuarios()
 
+@router.get("/por-rol/{rol_id}", response_model=dict)
+async def listar_usuarios_por_rol(rol_id: int):
+    return controller.listar_usuarios_por_rol(rol_id)
+
+@router.get("/pacientes/por-doctor/{doctor_id}", response_model=dict)
+async def listar_pacientes_por_doctor(doctor_id: int):
+    return controller.listar_pacientes_por_doctor(doctor_id)
+
 @router.get("/obtener/{usuario_id}", response_model=dict)
 async def obtener_usuario(usuario_id: int):
     """Obtiene un usuario específico por su ID"""

@@ -10,6 +10,8 @@ from routes.antecedentes_router import router as antecedentes_router
 from routes.datos_clinicos_router import router as datos_clinicos_router
 from routes.estilo_vida_router import router as estilo_vida_router
 from routes.evaluaciones_router import router as evaluaciones_router
+from routes.doctor_paciente_router import router as doctor_paciente_router
+from routes.evaluaciones_completas_router import router as evaluaciones_completas_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -38,6 +40,8 @@ app.include_router(antecedentes_router)
 app.include_router(datos_clinicos_router)
 app.include_router(estilo_vida_router)
 app.include_router(evaluaciones_router)
+app.include_router(doctor_paciente_router)
+app.include_router(evaluaciones_completas_router)
 
 if __name__ == "__main__":
     import uvicorn
